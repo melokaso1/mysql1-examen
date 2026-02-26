@@ -1,82 +1,80 @@
 -- consulta 1
 SELECT 
-    Trabajadores.id_trabajador,
-    CONCAT(Trabajadores.nombre, ' ', Trabajadores.apellidos) AS medico,
-    Trabajadores.especialidad,
-    COUNT(Pacientes.id_paciente) AS total_pacientes
-FROM Trabajadores
-
-INNER JOIN Pacientes ON Trabajadores.id_trabajador = Pacientes.id_medico_asignado
-GROUP BY Trabajadores.id_trabajador, Trabajadores.nombre, Trabajadores.apellidos, Trabajadores.especialidad
+    prof.id AS id_profesional,
+    prof.nombre_profesional AS medico,
+    ac.nombre_area AS especialidad,
+    COUNT(DISTINCT t.id_persona) AS total_pacientes
+FROM profesionales prof
+INNER JOIN areas_clinicas ac ON prof.id_area = ac.id
+INNER JOIN turnos t ON prof.id = t.id_profesional
+GROUP BY prof.id, prof.nombre_profesional, ac.nombre_area
 ORDER BY total_pacientes DESC;
 
 -- consulta 2
+SELECT 
+    COUNT(*) AS total,
+    s.nombre_sede AS tipo_sede
+FROM turnos t
+INNER JOIN sedes_atencion s ON t.id_sede = s.id
+WHERE s.nombre_sede = 'Centro Médico'
 
-select 
-	count(*) as total, 
-    tipo_vacacion
-from Vacaciones
-where tipo_vacacion = 'planificadas'
+UNION
 
-union 
-
-select 
-	count(*) as total,
-    tipo_vacacion
-from Vacaciones
-where tipo_vacacion = 'disfrutadas';
+SELECT 
+    COUNT(*) AS total,
+    s.nombre_sede AS tipo_sede
+FROM turnos t
+INNER JOIN sedes_atencion s ON t.id_sede = s.id
+WHERE s.nombre_sede = 'Clínica Norte';
 
 -- consulta 3
-
 SELECT 
-    Trabajadores.id_trabajador,
-    CONCAT(Trabajadores.nombre, ' ', Trabajadores.apellidos) AS medico,
-    Trabajadores.especialidad,
-    SUM(TIMESTAMPDIFF(HOUR, Horarios.hora_inicio, Horarios.hora_fin)) AS horas_semanales
-FROM Trabajadores
-INNER JOIN Horarios ON Trabajadores.id_trabajador = Horarios.id_medico
-GROUP BY Trabajadores.id_trabajador, Trabajadores.nombre, Trabajadores.apellidos, Trabajadores.especialidad
+    prof.id AS id_profesional,
+    prof.nombre_profesional AS medico,
+    ac.nombre_area AS especialidad,
+    SUM(TIMESTAMPDIFF(HOUR, t.fecha_turno, t.fecha_turno)) AS horas_semanales
+FROM profesionales prof
+INNER JOIN areas_clinicas ac ON prof.id_area = ac.id
+INNER JOIN turnos t ON prof.id = t.id_profesional
+GROUP BY prof.id, prof.nombre_profesional, ac.nombre_area
 ORDER BY horas_semanales DESC;
 
--- consultas 4
-
+-- consulta 4
 SELECT 
-    Trabajadores.id_trabajador,
-    CONCAT(Trabajadores.nombre, ' ', Trabajadores.apellidos) AS medico_sustituto,
-    COUNT(Sustituciones.id_sustitucion) AS total_sustituciones
-FROM Trabajadores
-LEFT JOIN Sustituciones ON Trabajadores.id_trabajador = Sustituciones.id_medico_sustituto
-WHERE Trabajadores.tipo_empleado = 'sustituto'
-GROUP BY Trabajadores.id_trabajador, Trabajadores.nombre, Trabajadores.apellidos
-ORDER BY total_sustituciones DESC;
+    prof.id AS id_profesional,
+    prof.nombre_profesional AS medico_sustituto,
+    COUNT(t.id) AS total_turnos_sustituto
+FROM profesionales prof
+LEFT JOIN turnos t ON prof.id = t.id_profesional
+WHERE prof.id_area = 1
+GROUP BY prof.id, prof.nombre_profesional
+ORDER BY total_turnos_sustituto DESC;
 
--- consultas 5
-
-SELECT COUNT(DISTINCT Sustituciones.id_medico_sustituto) AS medicos_sustituyendo_ahora
-FROM Sustituciones
-WHERE CURDATE() BETWEEN Sustituciones.fecha_inicio AND Sustituciones.fecha_fin;
+-- consulta 5
+SELECT 
+    COUNT(DISTINCT t.id_profesional) AS medicos_atendiendo_hoy
+FROM turnos t
+WHERE t.fecha_turno = CURDATE();
 
 -- consulta 6
-
 SELECT 
-    Trabajadores.id_trabajador,
-    CONCAT(Trabajadores.nombre, ' ', Trabajadores.apellidos) AS medico,
-    Horarios.dia_semana,
-    TIMESTAMPDIFF(HOUR, Horarios.hora_inicio, Horarios.hora_fin) AS horas_consulta
-FROM Trabajadores
-INNER JOIN Horarios ON Trabajadores.id_trabajador = Horarios.id_medico
-ORDER BY Trabajadores.id_trabajador, 
-    FIELD(Horarios.dia_semana, 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo');
-    
+    prof.id AS id_profesional,
+    prof.nombre_profesional AS medico,
+    t.fecha_turno AS dia_consulta,
+    1 AS cantidad_turnos
+FROM profesionales prof
+INNER JOIN turnos t ON prof.id = t.id_profesional
+ORDER BY prof.id, t.fecha_turno;
+
 -- consulta 7
-
 SELECT 
-    Trabajadores.id_trabajador,
-    CONCAT(Trabajadores.nombre, ' ', Trabajadores.apellidos) AS medico,
-    Trabajadores.especialidad,
-    COUNT(Pacientes.id_paciente) AS total_pacientes
-FROM Trabajadores
-INNER JOIN Pacientes  ON Trabajadores.id_trabajador = Pacientes.id_medico_asignado
-GROUP BY Trabajadores.id_trabajador, Trabajadores.nombre, Trabajadores.apellidos, Trabajadores.especialidad
+    prof.id AS id_profesional,
+    prof.nombre_profesional AS medico,
+    ac.nombre_area AS especialidad,
+    COUNT(DISTINCT t.id_persona) AS total_pacientes
+FROM profesionales prof
+INNER JOIN areas_clinicas ac ON prof.id_area = ac.id
+INNER JOIN turnos t ON prof.id = t.id_profesional
+GROUP BY prof.id, prof.nombre_profesional, ac.nombre_area
 ORDER BY total_pacientes DESC
 LIMIT 1;
